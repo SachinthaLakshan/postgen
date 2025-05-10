@@ -11,11 +11,18 @@ const openai = new OpenAI({
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { prompt } = body;
+    const { prompt, numberOfFacts } = body;
 
     if (!prompt) {
       return NextResponse.json({ error: "Missing prompt." }, { status: 400 });
     }
+
+    let modifiedPrompt = `${prompt}  Image text lines should have a maximum of four words, matching highlighted text with relevant facts and descriptions. They should be meaningful and visually appealing. need ${numberOfFacts} facts. Organize this data like this pattern :
+                          1.Fact-
+Description:
+image text line one:
+image text line two:
+image text line three: `;
 
     // First get the text response from GPT-4
     const textResponse = await openai.chat.completions.create({
@@ -23,7 +30,7 @@ export async function POST(request) {
       messages: [
         {
           role: "user",
-          content: prompt
+          content: modifiedPrompt
         }
       ],
       max_tokens: 1000 // Added to limit response size
@@ -34,21 +41,22 @@ export async function POST(request) {
     }
 
     const gptResponseContent = textResponse.choices[0].message.content;
-    const contentArr = splitNumberedFacts(gptResponseContent);
+    const contentArr = parseFacts(gptResponseContent);
+
 
     // Generate images for each fact if content exists
     let imageUrls = [];
     if (contentArr.length > 0) {
       // Process images in parallel for better performance
       const imagePromises = contentArr.map(async (fact) => {
-        let factPrompt = `fact: ${fact}, Generate an image based on this description. also add the text to the bottom of the image. add this text in a gradient black box. add the page name "Strange And Interesting Things" to the bottom of the post with small font . create this image with  Hyper realistic natural look.  text should be in center aligned in the photo. center the text on the image. also highlight important words with bright yellow color and bright pink color`;
+        let factPrompt = `${fact.description}, Generate an image based on this description. `;
         try {
           const imageResponse = await openai.images.generate({
-            model: "dall-e-3", // Specify the model
+            model: "dall-e-2", // Specify the model
             prompt: factPrompt,
             n: 1,
             size: "1024x1024",
-            quality: "standard" // or "hd" for higher quality
+            // quality: "standard" // or "hd" for higher quality
           });
           return imageResponse.data[0]?.url;
         } catch (error) {
@@ -60,15 +68,15 @@ export async function POST(request) {
       imageUrls = (await Promise.all(imagePromises)).filter(url => url !== null);
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       content: contentArr,
-      images: imageUrls 
+      images: imageUrls
     }, { status: 200 });
 
   } catch (error) {
     console.error("Error in API route:", error);
     return NextResponse.json(
-      { 
+      {
         error: "An error occurred, please try again later!",
         details: process.env.NODE_ENV === "development" ? error.message : undefined
       },
@@ -79,8 +87,8 @@ export async function POST(request) {
 
 function splitNumberedFacts(text) {
   // Remove all newline characters
-  console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>:',text);
-  
+  console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>:', text);
+
   const cleanedText = text.replace(/\n/g, ' ');
 
   // Match each fact starting with a number (e.g., "1.", "2.", etc.)
@@ -89,4 +97,26 @@ function splitNumberedFacts(text) {
   // Trim whitespace from each match
   return matches ? matches.map(fact => fact.trim()) : [];
 }
+
+function parseFacts(text) {
+  const entries = text.split(/\n(?=\d+\.\sFact-)/); // Split each fact block
+  const factObjects = entries.map(entry => {
+    const factMatch = entry.match(/Fact-\s*(.*)/);
+    const descriptionMatch = entry.match(/Description:\s*([\s\S]*?)image text line one:/);
+    const imageLineOneMatch = entry.match(/image text line one:\s*(.*)/);
+    const imageLineTwoMatch = entry.match(/image text line two:\s*(.*)/);
+    const imageLineThreeMatch = entry.match(/image text line three:\s*(.*)/);
+
+    return {
+      fact: factMatch ? factMatch[1].trim() : "",
+      description: descriptionMatch ? descriptionMatch[1].trim() : "",
+      imageTextLineOne: imageLineOneMatch ? imageLineOneMatch[1].trim() : "",
+      imageTextLineTwo: imageLineTwoMatch ? imageLineTwoMatch[1].trim() : "",
+      imageTextLineThree: imageLineThreeMatch ? imageLineThreeMatch[1].trim() : ""
+    };
+  });
+
+  return factObjects;
+}
+
 
