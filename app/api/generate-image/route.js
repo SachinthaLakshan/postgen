@@ -17,7 +17,7 @@ export async function POST(request) {
       return NextResponse.json({ error: "Missing prompt." }, { status: 400 });
     }
 
-    let modifiedPrompt = `${prompt}  Image text lines should have a maximum of four words, matching highlighted text with relevant facts and descriptions. They should be meaningful and visually appealing. need ${numberOfFacts} facts. Organize this data like this pattern :
+    let modifiedPrompt = `${prompt} need image text lines, Image text lines should have a maximum of four words, matching highlighted text with relevant facts and descriptions. They should be meaningful and visually appealing. need ${numberOfFacts} facts. Organize this data like this pattern :
                           1.Fact-
 Description:
 image text line one:
@@ -87,7 +87,7 @@ image text line three: `;
 
 function splitNumberedFacts(text) {
   // Remove all newline characters
-  console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>:', text);
+ 
 
   const cleanedText = text.replace(/\n/g, ' ');
 
@@ -99,6 +99,7 @@ function splitNumberedFacts(text) {
 }
 
 function parseFacts(text) {
+  console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>:', text);
   const entries = text.split(/\n(?=\d+\.\sFact-)/); // Split each fact block
   const factObjects = entries.map(entry => {
     const factMatch = entry.match(/Fact-\s*(.*)/);

@@ -2,12 +2,12 @@
 
 import { useEffect, useRef } from "react";
 
-export default function ImageOverlay({ imageUrl }) {
+export default function ImageOverlay({ imageUrl, content }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
     if (!imageUrl || !canvasRef.current) return;
-    
+    console.log(content);
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -77,17 +77,17 @@ export default function ImageOverlay({ imageUrl }) {
       // Line 1
       ctx.font = "bold 60px sans-serif";
       ctx.fillStyle = selectedColors[0];
-      ctx.fillText("CRISPR has been used to", textX, textY);
+      ctx.fillText(content.imageTextLineOne, textX, textY);
       textY += 80;
 
       // Line 2 - Yellow highlight (combined into one line)
       ctx.fillStyle = selectedColors[1];
-      ctx.fillText("genetically edited mosquitoes", textX, textY);
+      ctx.fillText(content.imageTextLineTwo, textX, textY);
       textY += 80;
 
       // Line 3 - Pink highlight
       ctx.fillStyle = selectedColors[2];
-      ctx.fillText("that cannot spread malaria", textX, textY);
+      ctx.fillText(content.imageTextLineThree, textX, textY);
 
       // Footer - Moved outside the box
       ctx.fillStyle = "#dddddd";
