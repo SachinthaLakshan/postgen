@@ -371,5 +371,85 @@ a.secondary {
   outline: none;
 }
 
+/* Add these to your existing page.module.css */
+.canvasContainer {
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.canvasElement {
+  width: 100%;
+  height: auto;
+  max-width: 1024px;
+  aspect-ratio: 1/1;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.downloadButton {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.downloadButton:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.downloadIcon {
+  width: 24px;
+  height: 24px;
+}
+
+.spinAnimation {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Add these to your existing styles */
+.copyButton {
+  position: absolute;
+  top: 16px;
+  right: 60px; /* Positioned to the left of the download button */
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.copyButton:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.copyIcon {
+  width: 24px;
+  height: 24px;
+}
+
+/* Update the download button's right position */
+.downloadButton {
+  right: 16px; /* Changed from 16px to account for copy button */
+  /* ... rest of your existing downloadButton styles ... */
+}
+
 
 

@@ -17,12 +17,25 @@ export async function POST(request) {
       return NextResponse.json({ error: "Missing prompt." }, { status: 400 });
     }
 
-    let modifiedPrompt = `${prompt} need image text lines, Image text lines should have a maximum of four words, matching highlighted text with relevant facts and descriptions. They should be meaningful and visually appealing. need ${numberOfFacts} facts. Organize this data like this pattern :
-                          1.Fact-
-Description:
-image text line one:
-image text line two:
-image text line three: `;
+    let modifiedPrompt = `Generate ${numberOfFacts} factual items about ${prompt}. For each fact, provide:  
+
+1. **Fact-** [Clear statement of the fact]  
+2. **Description:** [1-2 sentence explanation/context]  
+3. **Image_text_line_one:** [Max 4 words, visually appealing highlight]  
+4. **Image_text_line_two:** [Max 4 words, complements line one]  
+5. **Image_text_line_three:** [Max 4 words, reinforces the fact]  
+
+**Requirements:**  
+- Image text lines must be concise (≤4 words each) and work together visually  
+- Description should be brief but meaningful  
+- Maintain this exact format for all ${numberOfFacts} facts  
+
+Example Output:  
+1. Fact- The Earth's atmosphere is 78% nitrogen.  
+Description: Nitrogen is crucial for plant growth but inert for humans.  
+Image_text_line_one: Air is mostly nitrogen  
+Image_text_line_two: Vital for plants  
+Image_text_line_three: Harmless to humans`;
 
     // First get the text response from GPT-4
     const textResponse = await openai.chat.completions.create({
@@ -103,10 +116,10 @@ function parseFacts(text) {
   const entries = text.split(/\n(?=\d+\.\sFact-)/); // Split each fact block
   const factObjects = entries.map(entry => {
     const factMatch = entry.match(/Fact-\s*(.*)/);
-    const descriptionMatch = entry.match(/Description:\s*([\s\S]*?)image text line one:/);
-    const imageLineOneMatch = entry.match(/image text line one:\s*(.*)/);
-    const imageLineTwoMatch = entry.match(/image text line two:\s*(.*)/);
-    const imageLineThreeMatch = entry.match(/image text line three:\s*(.*)/);
+    const descriptionMatch = entry.match(/Description:\s*([\s\S]*?)Image_text_line_one:/);
+    const imageLineOneMatch = entry.match(/Image_text_line_one:\s*(.*)/);
+    const imageLineTwoMatch = entry.match(/Image_text_line_two:\s*(.*)/);
+    const imageLineThreeMatch = entry.match(/Image_text_line_three:\s*(.*)/);
 
     return {
       fact: factMatch ? factMatch[1].trim() : "",
