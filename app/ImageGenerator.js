@@ -7,7 +7,13 @@ export default function ImageGenerator() {
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [factCount, setFactCount] = useState(5);
-  const [facts, setFacts] = useState({ images: [], content: [] });
+  const [pageName, setPageName] = useState("Strange And Interesting Things");
+  const [facts, setFacts] = useState(
+    {
+    "content": [],
+    "images": []
+}
+);
   const [error, setError] = useState("");
 
   // Optional: Refine prompt
@@ -60,9 +66,20 @@ export default function ImageGenerator() {
             id="factCount"
             type="number"
             min="1"
-            max="10"
             value={factCount}
             onChange={(e) => setFactCount(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
+            className={styles.numberInput}
+          />
+        </div>
+        <div className={styles.inputGroup}>
+          <label htmlFor="pagename" className={styles.label}>
+            Page Name:
+          </label>
+          <input
+            id="pagename"
+            type="text"
+            value={pageName}
+            onChange={(e) => setPageName(e.target.value)}
             className={styles.numberInput}
           />
         </div>
@@ -85,7 +102,7 @@ export default function ImageGenerator() {
             {facts.images.map((img, i) => (
               <div className={styles.imageCard} key={i}>
                 {/* <img src={img} alt="Generated" className={styles.gridImg} /> */}
-                <ImageOverlay content={facts.content[i]} imageUrl={`/api/proxy-image?url=${encodeURIComponent(img)}`} />
+                <ImageOverlay content={facts.content[i]} imageUrl={img} pageName={pageName} />
               </div>
             ))}
           </div>

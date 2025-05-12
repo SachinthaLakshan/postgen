@@ -2,10 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import styles from "./page.module.css";
-export default function ImageOverlay({ imageUrl, content }) {
+export default function ImageOverlay({ imageUrl, content, pageName }) {
   const canvasRef = useRef(null);
   const [isCopying, setIsCopying] = useState(false);
-
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
@@ -35,15 +34,8 @@ export default function ImageOverlay({ imageUrl, content }) {
 
   const drawOverlay = (canvas, ctx, image, content) => {
     // Set canvas dimensions
-    canvas.width = 1024;
+    canvas.width = 818;
     canvas.height = 1024;
-
-    // Clear canvas before drawing
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw image
-    ctx.drawImage(image, 0, 0, 1024, 1024);
-
     // Color options for each line
     const colorOptions = [
       // Line 1 colors (white/light variants)
@@ -60,13 +52,79 @@ export default function ImageOverlay({ imageUrl, content }) {
     const selectedColors = colorOptions.map(group =>
       group[Math.floor(Math.random() * group.length)]
     );
-
-    // Create rounded rectangle overlay
-    const overlayHeight = 300;
-    const overlayTop = canvas.height - overlayHeight - 60;
-    const cornerRadius = 32;
+  
+    // Clear canvas before drawing
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+    // Draw image
+    ctx.drawImage(image, 0, 0, 818, 1024);
+  
+    // Text configuration
     const padding = 40;
-
+    const textPadding = 40;  // Reduced for more text space
+    const cornerRadius = 32;
+    const lineHeight = 50;
+    const fontSize = 40;
+    const footerHeight = 40;
+    const minOverlayHeight = 150;
+    
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    ctx.textAlign = "left"; // Using left alignment for more control
+  
+    // Get highlight words from content
+    const highlightWords = content.highlights || [];
+    const highlightColor = "#ffff00"; // Yellow color for highlights
+    const normalColor = "#ffffff";    // White color for normal text
+  
+    // Function to split text into wrapped lines with highlight information
+    const createTextLines = () => {
+      const maxWidth = canvas.width - (padding * 2) - (textPadding * 2);
+      const words = content.fact.split(/\s+/);
+      const lines = [];
+      let currentLine = [];
+      let currentLineWidth = 0;
+  
+      // First break into words and identify highlights
+      const processedWords = words.map(word => {
+        const isHighlight = highlightWords.some(highlight => 
+          word.toLowerCase().includes(highlight.toLowerCase())
+        );
+        return { text: word, isHighlight };
+      });
+  
+      // Build lines ensuring they fit within maxWidth
+      processedWords.forEach(wordObj => {
+        const wordWidth = ctx.measureText(wordObj.text + ' ').width;
+        
+        if (currentLineWidth + wordWidth <= maxWidth) {
+          currentLine.push(wordObj);
+          currentLineWidth += wordWidth;
+        } else {
+          if (currentLine.length > 0) {
+            lines.push(currentLine);
+          }
+          currentLine = [wordObj];
+          currentLineWidth = wordWidth;
+        }
+      });
+  
+      // Add the last line
+      if (currentLine.length > 0) {
+        lines.push(currentLine);
+      }
+  
+      return lines;
+    };
+  
+    // Create the text lines
+    const textLines = createTextLines();
+    const lineCount = textLines.length;
+  
+    // Calculate overlay height
+    const textHeight = (lineCount * lineHeight) + (textPadding * 2);
+    const overlayHeight = Math.max(textHeight, minOverlayHeight);
+    const overlayTop = canvas.height - overlayHeight - footerHeight - 20;
+  
     // Draw rounded rectangle
     ctx.beginPath();
     ctx.moveTo(padding, overlayTop + cornerRadius);
@@ -78,38 +136,43 @@ export default function ImageOverlay({ imageUrl, content }) {
     ctx.lineTo(padding + cornerRadius, overlayTop + overlayHeight);
     ctx.arcTo(padding, overlayTop + overlayHeight, padding, overlayTop + overlayHeight - cornerRadius, cornerRadius);
     ctx.closePath();
-
+  
     // Gradient fill for rounded rectangle
     const gradient = ctx.createLinearGradient(0, overlayTop, 0, overlayTop + overlayHeight);
     gradient.addColorStop(0, "rgba(0, 0, 0, 0.7)");
     gradient.addColorStop(1, "rgba(0, 0, 0, 0.95)");
     ctx.fillStyle = gradient;
     ctx.fill();
-
-    // Text styles with 60px font
-    ctx.textAlign = "center";
-    const textX = canvas.width / 2;
-    let textY = overlayTop + padding + 50;
-
-    // Line 1
-    ctx.font = "bold 60px sans-serif";
-    ctx.fillStyle = selectedColors[0];
-    ctx.fillText(content.imageTextLineOne, textX, textY);
-    textY += 80;
-
-    // Line 2 - Yellow highlight (combined into one line)
-    ctx.fillStyle = selectedColors[1];
-    ctx.fillText(content.imageTextLineTwo, textX, textY);
-    textY += 80;
-
-    // Line 3 - Pink highlight
-    ctx.fillStyle = selectedColors[2];
-    ctx.fillText(content.imageTextLineThree, textX, textY);
-
-    // Footer - Moved outside the box
+  
+    // Draw text lines with highlights
+    let textY = overlayTop + textPadding + fontSize;
+    const boxLeft = padding + textPadding;
+    const boxRight = canvas.width - padding - textPadding;
+  
+    textLines.forEach(line => {
+      let currentX = boxLeft;
+      let lineText = '';
+      
+      // First calculate total line width for centering
+      const totalWidth = line.reduce((sum, word) => sum + ctx.measureText(word.text + ' ').width, 0);
+      currentX = (canvas.width - totalWidth) / 2;
+      
+      // Draw each word with appropriate color
+      line.forEach((wordObj, index) => {
+        const word = wordObj.text + (index < line.length - 1 ? ' ' : '');
+        ctx.fillStyle = wordObj.isHighlight ? selectedColors[Math.floor(Math.random() * 3)] : normalColor;
+        ctx.fillText(word, currentX, textY);
+        currentX += ctx.measureText(word).width;
+      });
+      
+      textY += lineHeight;
+    });
+  
+    // Footer
     ctx.fillStyle = "#dddddd";
     ctx.font = "bold 30px sans-serif";
-    ctx.fillText("Strange And Interesting Things", textX, canvas.height - 20);
+    ctx.textAlign = "center";
+    ctx.fillText(pageName, canvas.width / 2, canvas.height - 20);
   };
 
   const handleDownload = () => {
